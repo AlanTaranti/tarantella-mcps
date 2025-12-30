@@ -1,5 +1,10 @@
 import { WebClient } from '@slack/web-api';
-import type { SlackMessage, SlackSearchParams, SlackSearchResult } from '../../../shared/types.js';
+import type {
+  SlackChannelSearchParams,
+  SlackMessage,
+  SlackSearchParams,
+  SlackSearchResult,
+} from '../../../shared/types.js';
 
 export class SlackClient {
   private static readonly DEFAULT_LIMIT = 20;
@@ -39,7 +44,34 @@ export class SlackClient {
     return nextCursor ? { results, nextCursor } : { results };
   }
 
-  private buildSearchQuery(params: SlackSearchParams): string {
+  async searchInChannel(params: SlackChannelSearchParams): Promise<SlackSearchResult> {
+    const query = this.buildSearchQuery(params, params.channelId);
+
+    const response = await this.client.search.messages({
+      query,
+      count: params.limit ?? SlackClient.DEFAULT_LIMIT,
+      ...(params.cursor && { cursor: params.cursor }),
+    });
+
+    if (!(response.ok && response.messages)) {
+      return { results: [] };
+    }
+
+    const matches = response.messages.matches ?? [];
+    const results: SlackMessage[] = matches.map((match) => ({
+      text: match.text ?? '',
+      author: match.user ?? '',
+      channel:
+        typeof match.channel === 'object' && match.channel !== null ? (match.channel.id ?? '') : '',
+      timestamp: match.ts ?? '',
+    }));
+
+    const nextCursor = response.response_metadata?.next_cursor;
+
+    return nextCursor ? { results, nextCursor } : { results };
+  }
+
+  private buildSearchQuery(params: SlackSearchParams, channelId?: string): string {
     let query = params.query;
 
     if (params.fromDate) {
@@ -56,6 +88,9 @@ export class SlackClient {
     }
     if (params.hasThreads) {
       query += ' has:thread';
+    }
+    if (channelId) {
+      query += ` in:${channelId}`;
     }
 
     return query;

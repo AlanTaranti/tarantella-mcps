@@ -1,6 +1,6 @@
 import type { WebClient } from '@slack/web-api';
 import { describe, expect, it, vi } from 'vitest';
-import type { SlackSearchParams } from '../../../../shared/types.js';
+import type { SlackChannelSearchParams, SlackSearchParams } from '../../../../shared/types.js';
 import { SlackClient } from '../slack-client.js';
 
 vi.mock('@slack/web-api', () => ({
@@ -216,6 +216,67 @@ describe('SlackClient', () => {
       expect(mockSearch).toHaveBeenCalledWith({
         query: 'test',
         count: 20,
+      });
+    });
+  });
+
+  describe('searchInChannel', () => {
+    it('should search in specific channel', async () => {
+      const client = new SlackClient(MOCK_TOKEN);
+      const mockSearch = getMockSearch(client);
+
+      mockSearch.mockResolvedValueOnce({
+        ok: true,
+        messages: {
+          matches: [
+            {
+              text: 'Channel message',
+              user: 'U999',
+              channel: { id: 'C123' },
+              ts: '9999.999',
+            },
+          ],
+        },
+      });
+
+      const params: SlackChannelSearchParams = {
+        query: 'test',
+        channelId: 'C123',
+      };
+
+      const result = await client.searchInChannel(params);
+
+      expect(mockSearch).toHaveBeenCalledWith({
+        query: 'test in:C123',
+        count: 20,
+        cursor: undefined,
+      });
+      expect(result.results).toHaveLength(1);
+      expect(result.results[0]?.channel).toBe('C123');
+    });
+
+    it('should combine channel filter with other filters', async () => {
+      const client = new SlackClient(MOCK_TOKEN);
+      const mockSearch = getMockSearch(client);
+
+      mockSearch.mockResolvedValueOnce({
+        ok: true,
+        messages: { matches: [] },
+      });
+
+      const params: SlackChannelSearchParams = {
+        query: 'urgent',
+        channelId: 'C456',
+        userId: 'U789',
+        hasReactions: true,
+      };
+
+      await client.searchInChannel(params);
+
+      expect(mockSearch).toHaveBeenCalledWith({
+        query: 'urgent from:U789 has:reaction in:C456',
+        count: 20,
+        cursor: undefined,
       });
     });
   });

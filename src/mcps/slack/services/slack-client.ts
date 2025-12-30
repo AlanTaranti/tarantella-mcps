@@ -19,38 +19,23 @@ export class SlackClient {
 
   async searchMessages(params: SlackSearchParams): Promise<SlackSearchResult> {
     const query = this.buildSearchQuery(params);
-
-    const response = await this.client.search.messages({
-      query,
-      count: params.limit ?? SlackClient.DEFAULT_LIMIT,
-      ...(params.cursor && { cursor: params.cursor }),
-    });
-
-    if (!(response.ok && response.messages)) {
-      return { results: [] };
-    }
-
-    const matches = response.messages.matches ?? [];
-    const results: SlackMessage[] = matches.map((match) => ({
-      text: match.text ?? '',
-      author: match.user ?? '',
-      channel:
-        typeof match.channel === 'object' && match.channel !== null ? (match.channel.id ?? '') : '',
-      timestamp: match.ts ?? '',
-    }));
-
-    const nextCursor = response.response_metadata?.next_cursor;
-
-    return nextCursor ? { results, nextCursor } : { results };
+    return this.executeSearch(query, params.limit, params.cursor);
   }
 
   async searchInChannel(params: SlackChannelSearchParams): Promise<SlackSearchResult> {
     const query = this.buildSearchQuery(params, params.channelId);
+    return this.executeSearch(query, params.limit, params.cursor);
+  }
 
+  private async executeSearch(
+    query: string,
+    limit?: number,
+    cursor?: string
+  ): Promise<SlackSearchResult> {
     const response = await this.client.search.messages({
       query,
-      count: params.limit ?? SlackClient.DEFAULT_LIMIT,
-      ...(params.cursor && { cursor: params.cursor }),
+      count: limit ?? SlackClient.DEFAULT_LIMIT,
+      ...(cursor && { cursor }),
     });
 
     if (!(response.ok && response.messages)) {

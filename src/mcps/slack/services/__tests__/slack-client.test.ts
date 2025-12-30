@@ -279,5 +279,99 @@ describe('SlackClient', () => {
         cursor: undefined,
       });
     });
+
+    it('should handle API errors in channel search', async () => {
+      const client = new SlackClient(MOCK_TOKEN);
+      const mockSearch = getMockSearch(client);
+
+      mockSearch.mockResolvedValueOnce({
+        ok: false,
+        error: 'channel_not_found',
+      });
+
+      const result = await client.searchInChannel({
+        query: 'test',
+        channelId: 'C999',
+      });
+
+      expect(result.results).toHaveLength(0);
+      expect(result.nextCursor).toBeUndefined();
+    });
+
+    it('should handle empty results in channel search', async () => {
+      const client = new SlackClient(MOCK_TOKEN);
+      const mockSearch = getMockSearch(client);
+
+      mockSearch.mockResolvedValueOnce({
+        ok: true,
+        messages: { matches: [] },
+      });
+
+      const result = await client.searchInChannel({
+        query: 'nonexistent',
+        channelId: 'C123',
+      });
+
+      expect(result.results).toHaveLength(0);
+      expect(result.nextCursor).toBeUndefined();
+    });
+
+    it('should use default limit when not provided', async () => {
+      const client = new SlackClient(MOCK_TOKEN);
+      const mockSearch = getMockSearch(client);
+
+      mockSearch.mockResolvedValueOnce({
+        ok: true,
+        messages: { matches: [] },
+      });
+
+      await client.searchInChannel({
+        query: 'test',
+        channelId: 'C123',
+      });
+
+      expect(mockSearch).toHaveBeenCalledWith({
+        query: 'test in:C123',
+        count: 20,
+        cursor: undefined,
+      });
+    });
+
+    it('should handle pagination with nextCursor', async () => {
+      const client = new SlackClient(MOCK_TOKEN);
+      const mockSearch = getMockSearch(client);
+
+      mockSearch.mockResolvedValueOnce({
+        ok: true,
+        messages: {
+          matches: [
+            {
+              text: 'Message 1',
+              user: 'U111',
+              channel: { id: 'C123' },
+              ts: '1111.111',
+            },
+          ],
+        },
+        response_metadata: {
+          next_cursor: 'cursor_page_2',
+        },
+      });
+
+      const result = await client.searchInChannel({
+        query: 'test',
+        channelId: 'C123',
+        limit: 10,
+        cursor: 'cursor_page_1',
+      });
+
+      expect(mockSearch).toHaveBeenCalledWith({
+        query: 'test in:C123',
+        count: 10,
+        cursor: 'cursor_page_1',
+      });
+      expect(result.results).toHaveLength(1);
+      expect(result.nextCursor).toBe('cursor_page_2');
+    });
   });
 });

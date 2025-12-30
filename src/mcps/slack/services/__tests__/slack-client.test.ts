@@ -114,5 +114,109 @@ describe('SlackClient', () => {
       expect(result.results).toHaveLength(0);
       expect(result.nextCursor).toBeUndefined();
     });
+
+    it('should handle API error when response.ok is false', async () => {
+      const client = new SlackClient(MOCK_TOKEN);
+      const mockSearch = getMockSearch(client);
+
+      mockSearch.mockResolvedValueOnce({
+        ok: false,
+        error: 'invalid_auth',
+      });
+
+      const result = await client.searchMessages({ query: 'test' });
+
+      expect(result.results).toHaveLength(0);
+      expect(result.nextCursor).toBeUndefined();
+    });
+
+    it('should handle missing messages in response', async () => {
+      const client = new SlackClient(MOCK_TOKEN);
+      const mockSearch = getMockSearch(client);
+
+      mockSearch.mockResolvedValueOnce({
+        ok: true,
+      });
+
+      const result = await client.searchMessages({ query: 'test' });
+
+      expect(result.results).toHaveLength(0);
+      expect(result.nextCursor).toBeUndefined();
+    });
+
+    it('should transform messages with missing or null fields', async () => {
+      const client = new SlackClient(MOCK_TOKEN);
+      const mockSearch = getMockSearch(client);
+
+      const EDGE_CASE_MESSAGE_COUNT = 3;
+      mockSearch.mockResolvedValueOnce({
+        ok: true,
+        messages: {
+          // Using unknown type assertion to test edge cases with null/undefined values
+          // that may occur in real API responses despite type definitions
+          matches: [
+            {
+              text: null as unknown as string,
+              user: null as unknown as string,
+              channel: null as unknown as { id: string },
+              ts: null as unknown as string,
+            },
+            {
+              text: undefined as unknown as string,
+              user: undefined as unknown as string,
+              channel: { id: undefined as unknown as string },
+              ts: undefined as unknown as string,
+            },
+            {
+              // All fields completely missing
+            },
+          ] as unknown as Array<{
+            text?: string;
+            user?: string;
+            channel?: { id?: string };
+            ts?: string;
+          }>,
+        },
+      });
+
+      const result = await client.searchMessages({ query: 'test' });
+
+      expect(result.results).toHaveLength(EDGE_CASE_MESSAGE_COUNT);
+      expect(result.results[0]).toEqual({
+        text: '',
+        author: '',
+        channel: '',
+        timestamp: '',
+      });
+      expect(result.results[1]).toEqual({
+        text: '',
+        author: '',
+        channel: '',
+        timestamp: '',
+      });
+      expect(result.results[2]).toEqual({
+        text: '',
+        author: '',
+        channel: '',
+        timestamp: '',
+      });
+    });
+
+    it('should use default limit of 20 when limit is not provided', async () => {
+      const client = new SlackClient(MOCK_TOKEN);
+      const mockSearch = getMockSearch(client);
+
+      mockSearch.mockResolvedValueOnce({
+        ok: true,
+        messages: { matches: [] },
+      });
+
+      await client.searchMessages({ query: 'test' });
+
+      expect(mockSearch).toHaveBeenCalledWith({
+        query: 'test',
+        count: 20,
+      });
+    });
   });
 });

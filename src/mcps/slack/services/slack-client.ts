@@ -2,6 +2,7 @@ import { WebClient } from '@slack/web-api';
 import type { SlackMessage, SlackSearchParams, SlackSearchResult } from '../../../shared/types.js';
 
 export class SlackClient {
+  private static readonly DEFAULT_LIMIT = 20;
   private readonly client: WebClient;
 
   constructor(token: string) {
@@ -13,11 +14,10 @@ export class SlackClient {
 
   async searchMessages(params: SlackSearchParams): Promise<SlackSearchResult> {
     const query = this.buildSearchQuery(params);
-    const DEFAULT_LIMIT = 20;
 
     const response = await this.client.search.messages({
       query,
-      count: params.limit ?? DEFAULT_LIMIT,
+      count: params.limit ?? SlackClient.DEFAULT_LIMIT,
       ...(params.cursor && { cursor: params.cursor }),
     });
 
@@ -29,7 +29,8 @@ export class SlackClient {
     const results: SlackMessage[] = matches.map((match) => ({
       text: match.text ?? '',
       author: match.user ?? '',
-      channel: typeof match.channel === 'object' ? (match.channel.id ?? '') : '',
+      channel:
+        typeof match.channel === 'object' && match.channel !== null ? (match.channel.id ?? '') : '',
       timestamp: match.ts ?? '',
     }));
 

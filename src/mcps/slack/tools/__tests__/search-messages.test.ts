@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { searchMessagesSchema } from '../search-messages.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { SlackClient } from '../../services/slack-client.js';
+import { createSearchMessagesHandler, searchMessagesSchema } from '../search-messages.js';
 
 const MIN_LIMIT = 1;
 const MAX_LIMIT = 100;
@@ -172,5 +173,82 @@ describe('searchMessagesSchema', () => {
     if (withThreadsFalse.success) {
       expect(withThreadsFalse.data.has_threads).toBe(false);
     }
+  });
+});
+
+describe('createSearchMessagesHandler', () => {
+  let mockClient: SlackClient;
+
+  beforeEach(() => {
+    mockClient = {
+      searchMessages: vi.fn(),
+    } as unknown as SlackClient;
+  });
+
+  it('should call SlackClient.searchMessages with transformed params', async () => {
+    const mockResults = {
+      results: [
+        {
+          text: 'Test message',
+          author: 'U123',
+          channel: 'C456',
+          timestamp: '123.456',
+        },
+      ],
+      nextCursor: 'next_page',
+    };
+
+    vi.mocked(mockClient.searchMessages).mockResolvedValueOnce(mockResults);
+
+    const handler = createSearchMessagesHandler(mockClient);
+    const result = await handler({
+      query: 'urgent bug',
+      limit: 25,
+      user_id: 'U789',
+    });
+
+    expect(mockClient.searchMessages).toHaveBeenCalledWith({
+      query: 'urgent bug',
+      limit: 25,
+      userId: 'U789',
+    });
+
+    expect(result).toEqual({
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(mockResults, null, 2),
+        },
+      ],
+    });
+  });
+
+  it('should handle all optional parameters', async () => {
+    vi.mocked(mockClient.searchMessages).mockResolvedValueOnce({
+      results: [],
+    });
+
+    const handler = createSearchMessagesHandler(mockClient);
+    await handler({
+      query: 'test',
+      limit: 10,
+      cursor: 'page2',
+      from_date: '2024-01-01',
+      to_date: '2024-12-31',
+      user_id: 'U111',
+      has_reactions: true,
+      has_threads: false,
+    });
+
+    expect(mockClient.searchMessages).toHaveBeenCalledWith({
+      query: 'test',
+      limit: 10,
+      cursor: 'page2',
+      fromDate: '2024-01-01',
+      toDate: '2024-12-31',
+      userId: 'U111',
+      hasReactions: true,
+      hasThreads: false,
+    });
   });
 });

@@ -6,7 +6,8 @@
   "mutate": [
     "src/**/*.ts",
     "!src/**/*.test.ts",
-    "!src/**/__tests__/**"
+    "!src/**/__tests__/**",
+    "!src/**/types.ts"
   ],
   "mutator": {
     "plugins": [
@@ -24,5 +25,9 @@
   "timeoutFactor": 1.5,
   "maxConcurrentTestRunners": 4,
   "ignoreStatic": true,
-  "incrementalFile": ".stryker-tmp/incremental.json"
+  "incrementalFile": ".stryker-tmp/incremental.json",
+  "vitest": {
+    "configFile": "vitest.config.ts",
+    "related": false
+  }
 }

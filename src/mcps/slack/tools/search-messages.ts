@@ -5,7 +5,12 @@ const MIN_LIMIT = 1;
 
 export const searchMessagesSchema = z.object({
   query: z.string().min(1, 'Query cannot be empty'),
-  limit: z.number().min(MIN_LIMIT).max(MAX_LIMIT).optional(),
+  limit: z
+    .number()
+    .int('Limit must be an integer')
+    .min(MIN_LIMIT, `Limit must be at least ${MIN_LIMIT}`)
+    .max(MAX_LIMIT, `Limit cannot exceed ${MAX_LIMIT}`)
+    .optional(),
   cursor: z.string().optional(),
   from_date: z.string().optional(),
   to_date: z.string().optional(),

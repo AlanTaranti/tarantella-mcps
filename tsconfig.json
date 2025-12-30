@@ -1,15 +1,12 @@
 {
   "compilerOptions": {
-    // Module system
     "module": "ESNext",
     "moduleResolution": "bundler",
     "target": "ES2022",
 
-    // Output
     "outDir": "./dist",
     "rootDir": "./src",
 
-    // Strict type checking (maximum)
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
@@ -22,13 +19,11 @@
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
 
-    // ESM and interop
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
 
-    // Other
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },

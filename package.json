@@ -17,7 +17,7 @@
     "lint": "biome lint ./src",
     "format": "biome format --write ./src",
     "check": "biome check --write ./src",
-    "ci": "npm run typecheck && npm run lint && npm test"
+    "ci": "npm run typecheck && npm run lint && npm test && npm run test:mutation"
   },
   "author": "Alan Taranti",
   "license": "ISC",

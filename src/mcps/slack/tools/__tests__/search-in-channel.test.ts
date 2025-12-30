@@ -113,6 +113,88 @@ describe('searchInChannelSchema', () => {
       expect(result.error.issues[0]?.message).toBe('Limit must be an integer');
     }
   });
+
+  it('should accept optional string fields', () => {
+    const withCursor = searchInChannelSchema.safeParse({
+      query: 'test',
+      channel_id: 'C123456',
+      cursor: 'next_page_token',
+    });
+    const withFromDate = searchInChannelSchema.safeParse({
+      query: 'test',
+      channel_id: 'C123456',
+      from_date: '2024-01-01',
+    });
+    const withToDate = searchInChannelSchema.safeParse({
+      query: 'test',
+      channel_id: 'C123456',
+      to_date: '2024-12-31',
+    });
+    const withUserId = searchInChannelSchema.safeParse({
+      query: 'test',
+      channel_id: 'C123456',
+      user_id: 'U12345678',
+    });
+
+    expect(withCursor.success).toBe(true);
+    expect(withFromDate.success).toBe(true);
+    expect(withToDate.success).toBe(true);
+    expect(withUserId.success).toBe(true);
+
+    if (withCursor.success) {
+      expect(withCursor.data.cursor).toBe('next_page_token');
+    }
+    if (withFromDate.success) {
+      expect(withFromDate.data.from_date).toBe('2024-01-01');
+    }
+    if (withToDate.success) {
+      expect(withToDate.data.to_date).toBe('2024-12-31');
+    }
+    if (withUserId.success) {
+      expect(withUserId.data.user_id).toBe('U12345678');
+    }
+  });
+
+  it('should accept boolean fields', () => {
+    const withReactionsTrue = searchInChannelSchema.safeParse({
+      query: 'test',
+      channel_id: 'C123456',
+      has_reactions: true,
+    });
+    const withReactionsFalse = searchInChannelSchema.safeParse({
+      query: 'test',
+      channel_id: 'C123456',
+      has_reactions: false,
+    });
+    const withThreadsTrue = searchInChannelSchema.safeParse({
+      query: 'test',
+      channel_id: 'C123456',
+      has_threads: true,
+    });
+    const withThreadsFalse = searchInChannelSchema.safeParse({
+      query: 'test',
+      channel_id: 'C123456',
+      has_threads: false,
+    });
+
+    expect(withReactionsTrue.success).toBe(true);
+    expect(withReactionsFalse.success).toBe(true);
+    expect(withThreadsTrue.success).toBe(true);
+    expect(withThreadsFalse.success).toBe(true);
+
+    if (withReactionsTrue.success) {
+      expect(withReactionsTrue.data.has_reactions).toBe(true);
+    }
+    if (withReactionsFalse.success) {
+      expect(withReactionsFalse.data.has_reactions).toBe(false);
+    }
+    if (withThreadsTrue.success) {
+      expect(withThreadsTrue.data.has_threads).toBe(true);
+    }
+    if (withThreadsFalse.success) {
+      expect(withThreadsFalse.data.has_threads).toBe(false);
+    }
+  });
 });
 
 describe('createSearchInChannelHandler', () => {
@@ -283,5 +365,80 @@ describe('createSearchInChannelHandler', () => {
     expect(callArg).not.toHaveProperty('userId');
     expect(callArg).not.toHaveProperty('hasReactions');
     expect(callArg).not.toHaveProperty('hasThreads');
+  });
+
+  it('should properly transform individual optional string fields', async () => {
+    vi.mocked(mockClient.searchInChannel).mockResolvedValue({ results: [] });
+    const handler = createSearchInChannelHandler(mockClient);
+
+    // Test cursor transformation
+    await handler({
+      query: 'test',
+      channel_id: 'C123',
+      cursor: 'next_page_token',
+    });
+    expect(vi.mocked(mockClient.searchInChannel).mock.calls[0]?.[0]).toEqual({
+      query: 'test',
+      channelId: 'C123',
+      cursor: 'next_page_token',
+    });
+
+    // Test from_date transformation
+    vi.mocked(mockClient.searchInChannel).mockClear();
+    await handler({
+      query: 'test',
+      channel_id: 'C123',
+      from_date: '2024-01-01',
+    });
+    expect(vi.mocked(mockClient.searchInChannel).mock.calls[0]?.[0]).toEqual({
+      query: 'test',
+      channelId: 'C123',
+      fromDate: '2024-01-01',
+    });
+
+    // Test to_date transformation
+    vi.mocked(mockClient.searchInChannel).mockClear();
+    await handler({
+      query: 'test',
+      channel_id: 'C123',
+      to_date: '2024-12-31',
+    });
+    expect(vi.mocked(mockClient.searchInChannel).mock.calls[0]?.[0]).toEqual({
+      query: 'test',
+      channelId: 'C123',
+      toDate: '2024-12-31',
+    });
+
+    // Test user_id transformation
+    vi.mocked(mockClient.searchInChannel).mockClear();
+    await handler({
+      query: 'test',
+      channel_id: 'C123',
+      user_id: 'U12345678',
+    });
+    expect(vi.mocked(mockClient.searchInChannel).mock.calls[0]?.[0]).toEqual({
+      query: 'test',
+      channelId: 'C123',
+      userId: 'U12345678',
+    });
+  });
+
+  it('should properly handle boolean fields with false values', async () => {
+    vi.mocked(mockClient.searchInChannel).mockResolvedValue({ results: [] });
+    const handler = createSearchInChannelHandler(mockClient);
+
+    await handler({
+      query: 'test',
+      channel_id: 'C123',
+      has_reactions: false,
+      has_threads: false,
+    });
+
+    expect(mockClient.searchInChannel).toHaveBeenCalledWith({
+      query: 'test',
+      channelId: 'C123',
+      hasReactions: false,
+      hasThreads: false,
+    });
   });
 });

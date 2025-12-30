@@ -256,3 +256,8 @@ fabric.properties
 
 # End of https://www.toptal.com/developers/gitignore/api/webstorm,node
 
+# TypeScript build artifacts (additional)
+.stryker-tmp/
+
+# macOS
+.DS_Store

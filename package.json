@@ -1,10 +1,23 @@
 {
   "name": "tarantella-mcps",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
-  "main": "index.js",
+  "main": "dist/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:mutation": "stryker run",
+    "test:mutation:watch": "stryker run --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome lint ./src",
+    "format": "biome format --write ./src",
+    "check": "biome check --write ./src",
+    "ci": "npm run typecheck && npm run lint && npm test"
   },
   "author": "Alan Taranti",
   "license": "ISC",
@@ -12,5 +25,18 @@
     "@modelcontextprotocol/sdk": "^1.25.1",
     "express": "^5.2.1",
     "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.10",
+    "@stryker-mutator/core": "^9.4.0",
+    "@stryker-mutator/vitest-runner": "^9.4.0",
+    "@stryker-mutator/typescript-checker": "^9.4.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.0.3",
+    "@vitest/coverage-v8": "^4.0.16",
+    "@vitest/ui": "^4.0.16",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
   }
 }

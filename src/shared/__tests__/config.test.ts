@@ -71,12 +71,13 @@ describe('validateConfig', () => {
   });
 
   it('should parse PORT as integer', () => {
+    const CUSTOM_PORT = 9000;
     process.env['SLACK_BOT_TOKEN'] = 'xoxb-test-token';
     process.env['PORT'] = '9000';
 
     const config = validateConfig();
 
-    expect(config.port).toBe(9000);
+    expect(config.port).toBe(CUSTOM_PORT);
     expect(typeof config.port).toBe('number');
   });
 });

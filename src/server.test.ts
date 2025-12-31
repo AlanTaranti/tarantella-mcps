@@ -7,8 +7,7 @@ vi.stubEnv('SLACK_BOT_TOKEN', 'xoxb-test-token');
 vi.stubEnv('PORT', '3001');
 
 const HTTP_OK = 200;
-const HTTP_BAD_REQUEST = 400;
-const HTTP_INTERNAL_SERVER_ERROR = 500;
+const SSE_TEST_TIMEOUT_MS = 100;
 
 describe('Express Server', () => {
   let app: express.Application;
@@ -34,13 +33,13 @@ describe('Express Server', () => {
     // SSE endpoints keep the connection open, so we need to abort the request
     // We're just testing that the route exists and doesn't return 404
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 100);
+    const timeoutId = setTimeout(() => controller.abort(), SSE_TEST_TIMEOUT_MS);
 
     try {
       await request(app)
         .get('/mcp/slack/sse')
-        .timeout(100);
-    } catch (error) {
+        .timeout(SSE_TEST_TIMEOUT_MS);
+    } catch (_error) {
       // Timeout is expected for SSE endpoints
       // We just want to ensure the route exists (not 404)
     } finally {

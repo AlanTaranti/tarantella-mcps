@@ -34,7 +34,7 @@ export const createSlackMcpServer = (botToken: string): McpServer => {
         'Search across all Slack messages in all channels and conversations. Supports filtering by date range, user, reactions, and threads.',
       inputSchema: searchMessagesSchema,
     },
-    async (args, _extra) => {
+    async (args) => {
       return await searchMessagesHandler(args);
     }
   );
@@ -47,7 +47,7 @@ export const createSlackMcpServer = (botToken: string): McpServer => {
         'Search within a specific Slack channel. Useful when you know the channel ID and want to search only within that channel.',
       inputSchema: searchInChannelSchema,
     },
-    async (args, _extra) => {
+    async (args) => {
       return await searchInChannelHandler(args);
     }
   );

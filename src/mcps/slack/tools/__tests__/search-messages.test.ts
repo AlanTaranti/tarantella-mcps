@@ -251,4 +251,23 @@ describe('createSearchMessagesHandler', () => {
       hasThreads: false,
     });
   });
+
+  it('should propagate errors from SlackClient', async () => {
+    const error = new Error('Search failed');
+    vi.mocked(mockClient.searchMessages).mockRejectedValueOnce(error);
+
+    const handler = createSearchMessagesHandler(mockClient);
+    await expect(handler({ query: 'test' })).rejects.toThrow('Search failed');
+  });
+
+  it('should format empty results correctly', async () => {
+    vi.mocked(mockClient.searchMessages).mockResolvedValueOnce({ results: [] });
+
+    const handler = createSearchMessagesHandler(mockClient);
+    const result = await handler({ query: 'no matches' });
+
+    expect(result.content[0]?.type).toBe('text');
+    expect(result.content[0]?.text).toContain('results');
+    expect(result.content[0]?.text).toContain('[]');
+  });
 });
